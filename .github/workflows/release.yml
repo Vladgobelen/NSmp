@@ -12,44 +12,23 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # Установка зависимостей для Ubuntu 24.04+
-      - name: Install dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y \
-            musl-tools \
-            upx \
-            pkg-config \
-            libasound2-dev \
-            gcc-x86-64-linux-gnu  # Новое имя пакета для Noble
+      - name: Install musl
+        run: sudo apt-get update && sudo apt-get install -y musl-tools upx
 
-      # Настройка окружения
-      - name: Setup environment
-        run: |
-          echo "PKG_CONFIG_ALLOW_CROSS=1" >> $GITHUB_ENV
-          echo "RUSTFLAGS=-C linker=x86_64-linux-gnu-gcc" >> $GITHUB_ENV
-
-      # Установка Rust
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@stable
         with:
           targets: x86_64-unknown-linux-musl
 
-      # Сборка
       - name: Build release
         run: |
-          cargo build --release --target x86_64-unknown-linux-musl \
-            --config target.x86_64-unknown-linux-musl.linker=\"x86_64-linux-gnu-gcc\"
-          
+          cargo build --release --target x86_64-unknown-linux-musl
           strip target/x86_64-unknown-linux-musl/release/music_player
           upx --best target/x86_64-unknown-linux-musl/release/music_player
 
-      # Создание релиза
       - name: Create Release
         uses: softprops/action-gh-release@v1
         with:
           name: "v${{ github.ref_name }}"
           files: |
             target/x86_64-unknown-linux-musl/release/music_player
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
