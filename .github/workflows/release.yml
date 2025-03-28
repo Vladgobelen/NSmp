@@ -2,57 +2,43 @@ name: Release Build
 
 on:
   push:
-    tags: ["v*"]  # Запускать при создании тега (например, v1.0.0)
+    tags: ["v*.*.*"]  # Триггер на теги формата v1.0.0
+  workflow_dispatch:   # Ручной запуск через Actions tab
 
 jobs:
   build:
     name: Build static binary
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        target: [x86_64-unknown-linux-musl]  # Можно добавить другие цели (aarch64, etc.)
-
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install musl-tools
-        run: sudo apt-get update && sudo apt-get install -y musl-tools
+      # Установка musl и зависимостей
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y musl-tools upx
 
-      - name: Setup Rust (musl)
+      # Настройка Rust
+      - name: Setup Rust
         uses: actions-rs/toolchain@v1
         with:
           profile: minimal
-          target: ${{ matrix.target }}
+          target: x86_64-unknown-linux-musl
           override: true
 
-      - name: Build (release)
-        uses: actions-rs/cargo@v1
-        with:
-          command: build
-          args: --release --target ${{ matrix.target }}
-
-      - name: Strip binary (уменьшаем размер)
+      # Сборка
+      - name: Build release
         run: |
-          strip ./target/${{ matrix.target }}/release/music_player
+          cargo build --release --target x86_64-unknown-linux-musl
+          strip target/x86_64-unknown-linux-musl/release/music_player
+          upx --best target/x86_64-unknown-linux-musl/release/music_player
 
-      - name: Upload artifact
-        uses: actions/upload-artifact@v3
-        with:
-          name: music_player-${{ matrix.target }}
-          path: ./target/${{ matrix.target }}/release/music_player
-
-  release:
-    name: Create Release
-    needs: build
-    runs-on: ubuntu-latest
-    steps:
-      - name: Download all artifacts
-        uses: actions/download-artifact@v3
-
+      # Создание релиза
       - name: Create Release
         uses: softprops/action-gh-release@v1
         with:
+          name: "v${{ github.ref_name }}"
           files: |
-            music_player-*/music_player
+            target/x86_64-unknown-linux-musl/release/music_player
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
