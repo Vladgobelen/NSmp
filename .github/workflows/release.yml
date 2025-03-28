@@ -12,39 +12,34 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # Установка базовых зависимостей
       - name: Install dependencies
         run: |
           sudo apt-get update
           sudo apt-get install -y \
             musl-tools \
             upx \
-            libasound2-dev \
-            pkg-config
+            libasound2-dev  # Устанавливаем ALSA по умолчанию
 
-      # Настройка Rust
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@stable
         with:
           targets: x86_64-unknown-linux-musl
 
-      # Сборка проекта
-      - name: Build release
+      - name: Configure linker
         run: |
           mkdir -p .cargo
           echo '[target.x86_64-unknown-linux-musl]' > .cargo/config.toml
           echo 'linker = "x86_64-linux-gnu-gcc"' >> .cargo/config.toml
-          
+
+      - name: Build release
+        run: |
           cargo build --release --target x86_64-unknown-linux-musl
           strip target/x86_64-unknown-linux-musl/release/music_player
           upx --best target/x86_64-unknown-linux-musl/release/music_player
 
-      # Создание релиза
       - name: Create Release
         uses: softprops/action-gh-release@v1
         with:
           name: "v${{ github.ref_name }}"
           files: |
             target/x86_64-unknown-linux-musl/release/music_player
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
