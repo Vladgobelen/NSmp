@@ -2,17 +2,17 @@ name: Release Build
 
 on:
   push:
-    tags: ["v*.*.*"]
+    tags: ["v*"]
   workflow_dispatch:
 
 jobs:
   build:
-    name: Build static binary with sound
+    name: Build Static Binary
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
-      # Установка компилятора и зависимостей ALSA
+      # Установка базовых зависимостей
       - name: Install dependencies
         run: |
           sudo apt-get update
@@ -20,26 +20,21 @@ jobs:
             musl-tools \
             upx \
             libasound2-dev \
-            gcc-x86-64-linux-gnu \
             pkg-config
 
-      # Настройка переменных окружения
-      - name: Setup environment
-        run: |
-          echo "CARGO_TARGET_X86_64_UNKNOWN_LINUX_MUSL_LINKER=x86_64-linux-gnu-gcc" >> $GITHUB_ENV
-          echo "RUSTFLAGS=-C target-feature=+crt-static" >> $GITHUB_ENV
-          echo "PKG_CONFIG_ALLOW_CROSS=1" >> $GITHUB_ENV
-          echo "PKG_CONFIG_PATH=/usr/lib/x86_64-linux-gnu/pkgconfig" >> $GITHUB_ENV
-
-      # Установка Rust
+      # Настройка Rust
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@stable
         with:
           targets: x86_64-unknown-linux-musl
 
-      # Сборка
+      # Сборка проекта
       - name: Build release
         run: |
+          mkdir -p .cargo
+          echo '[target.x86_64-unknown-linux-musl]' > .cargo/config.toml
+          echo 'linker = "x86_64-linux-gnu-gcc"' >> .cargo/config.toml
+          
           cargo build --release --target x86_64-unknown-linux-musl
           strip target/x86_64-unknown-linux-musl/release/music_player
           upx --best target/x86_64-unknown-linux-musl/release/music_player
