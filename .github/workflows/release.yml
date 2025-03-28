@@ -2,8 +2,8 @@ name: Release Build
 
 on:
   push:
-    tags: ["v*.*.*"]  # Триггер на теги формата v1.0.0
-  workflow_dispatch:   # Ручной запуск через Actions tab
+    tags: ["v*.*.*"]
+  workflow_dispatch:
 
 jobs:
   build:
@@ -12,19 +12,25 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # Установка musl и зависимостей
+      # Установка зависимостей
       - name: Install dependencies
         run: |
           sudo apt-get update
           sudo apt-get install -y musl-tools upx
 
-      # Настройка Rust
+      # Явное указание версии Rust
       - name: Setup Rust
         uses: actions-rs/toolchain@v1
         with:
           profile: minimal
           target: x86_64-unknown-linux-musl
+          toolchain: stable  # ← Явно указываем версию
           override: true
+          components: rustfmt, clippy  # Опционально
+
+      # Проверка версии
+      - name: Check Rust version
+        run: rustc --version
 
       # Сборка
       - name: Build release
