@@ -12,7 +12,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # Установка ВСЕХ необходимых зависимостей
+      # Установка зависимостей для Ubuntu 24.04+
       - name: Install dependencies
         run: |
           sudo apt-get update
@@ -21,22 +21,21 @@ jobs:
             upx \
             pkg-config \
             libasound2-dev \
-            gcc-multilib-x86-64-linux-gnu
+            gcc-x86-64-linux-gnu  # Новое имя пакета для Noble
 
-      # Настройка окружения для кросс-компиляции ALSA
+      # Настройка окружения
       - name: Setup environment
         run: |
           echo "PKG_CONFIG_ALLOW_CROSS=1" >> $GITHUB_ENV
-          echo "PKG_CONFIG_PATH=/usr/lib/x86_64-linux-gnu/pkgconfig" >> $GITHUB_ENV
           echo "RUSTFLAGS=-C linker=x86_64-linux-gnu-gcc" >> $GITHUB_ENV
 
-      # Установка Rust с явным указанием версии
+      # Установка Rust
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@stable
         with:
           targets: x86_64-unknown-linux-musl
 
-      # Сборка с явным указанием линковщика
+      # Сборка
       - name: Build release
         run: |
           cargo build --release --target x86_64-unknown-linux-musl \
