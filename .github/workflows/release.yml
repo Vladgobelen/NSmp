@@ -22,12 +22,14 @@ jobs:
         with:
           targets: x86_64-unknown-linux-musl
 
+      - name: Configure linker
+        run: |
+          mkdir -p .cargo
+          echo '[target.x86_64-unknown-linux-musl]' > .cargo/config.toml
+          echo 'linker = "x86_64-linux-gnu-gcc"' >> .cargo/config.toml
+
       - name: Build release
         run: |
-          # Явно указываем линковщик для musl
-          echo '[target.x86_64-unknown-linux-musl]' >> Cargo.toml
-          echo 'linker = "x86_64-linux-gnu-gcc"' >> Cargo.toml
-          
           cargo build --release --target x86_64-unknown-linux-musl
           strip target/x86_64-unknown-linux-musl/release/music_player
           upx --best target/x86_64-unknown-linux-musl/release/music_player
